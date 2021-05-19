@@ -1,0 +1,193 @@
+---
+title: "ProjectCoursera"
+author: "NickVazquez"
+date: "18/5/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Introduction
+
+It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the “quantified self” movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
+
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+
+# Steps:
+
+## 1.-Code for reading in the dataset and/or processing the data
+
+```{r cars}
+
+activity <- read.csv("activity.csv")
+
+vals <- c()
+
+dates <- c()
+
+for (date in unique(activity$date)) {
+  
+  val <- sum(activity[activity$date == date,]$steps, na.rm = TRUE)
+  
+  dates <- c(dates, date)
+  
+  vals <- c(vals, val)
+  
+}
+
+data= data.frame(vals,dates)
+
+head(data)
+
+```
+
+## Including Plots
+
+Histogram of the total number of steps taken each day
+
+```{r histogram}
+
+# library
+library(ggplot2)
+
+# basic histogram
+p <- ggplot(data, aes(x=vals)) + 
+  geom_histogram(fill="#69b3a2", color="#e9ecef", alpha=0.9) 
+
+print(p)
+```
+
+Mean and median number of steps taken each day
+
+```{r median}
+
+medians <- c()
+
+means <- c()
+
+for (date in unique(activity$date)) {
+  
+  mean_val <- mean(activity[activity$date == date,]$steps, na.rm = TRUE)
+  
+  median_val <- median(activity[activity$date == date,]$steps, na.rm = TRUE)
+  
+  medians <- c(medians, median_val)
+  
+  means <- c(means, mean_val)
+  
+}
+
+means_medians <- data.frame(medians, means)
+
+head(means_medians)
+
+
+```
+
+
+## Time series plot of the average number of steps taken
+
+```{r plot time}
+
+avg_step <- aggregate(steps ~ interval, data = activity, mean, na.rm = TRUE)
+
+p <- ggplot(avg_step, aes(x=interval, y=steps)) +
+  geom_line( color="steelblue") + 
+  geom_point() +
+  xlab("") +
+  theme(axis.text.x=element_text(angle=60, hjust=1)) 
+p
+
+```
+
+# Max Interval
+
+The 5-minute interval that, on average, contains the maximum number of steps is:
+
+```{r plot time}
+
+max_interval <- avg_step[max(avg_step),]$interval
+
+print(max_interval)
+
+```
+
+
+
+# Describe and show a strategy for imputing missing data
+
+We simply use the complete_cases function to find the NAs and delete they.
+
+```{r plot time}
+
+activity_NA <- activity[complete.cases(activity),]
+
+vals_na <- c()
+
+dates_na <- c()
+
+for (date in unique(activity_NA$date)) {
+  
+  val <- sum(activity[activity_NA$date == date,]$steps, na.rm = TRUE)
+  
+  dates_na <- c(dates_na, date)
+  
+  vals_na <- c(vals_na, val)
+  
+}
+
+data_na = data.frame(vals_na,dates_na)
+
+head(data)
+
+
+```
+
+
+```{r new plot}
+
+p <- ggplot(data_na, aes(x=vals_na)) + 
+  geom_histogram(fill="#69b3a2", color="#e9ecef", alpha=0.9) 
+
+print(p)
+
+```
+
+# Panel plot comparing the average number of steps taken per 5-minute
+
+```{r weekend}
+
+
+day <- weekdays(as.Date(activity$date))
+    daylevel <- vector()
+    for (i in 1:nrow(activity)) {
+        if (day[i] == "sabado") {
+            daylevel[i] <- "Weekend"
+        } else if (day[i] == "domingo") {
+            daylevel[i] <- "Weekend"
+        } else {
+            daylevel[i] <- "Weekday"
+        }
+    }
+    activity$daylevel <- daylevel
+    activity$daylevel <- factor(activity$daylevel)
+    
+    stepsByDay <- aggregate(steps ~ interval + daylevel, data = activity, mean)
+    names(stepsByDay) <- c("interval", "daylevel", "steps")
+    
+    library(lattice)  
+    
+     xyplot(steps ~ interval | daylevel, 
+            stepsByDay, 
+            type = "l", 
+            grid = TRUE,
+            layout = c(2, 1))
+    
+    
+```
